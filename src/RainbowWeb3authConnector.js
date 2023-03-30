@@ -1,44 +1,49 @@
 import { Web3AuthConnector } from "@web3auth/web3auth-wagmi-connector";
-import { Web3AuthNoModal } from "@web3auth/no-modal";
+import { Web3Auth } from "@web3auth/modal";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
-import { CHAIN_NAMESPACES } from "@web3auth/base";
+import { CHAIN_NAMESPACES, WALLET_ADAPTERS } from "@web3auth/base";
 
-const name = "Login with Auth0";
-const iconUrl = "https://avatars.githubusercontent.com/u/2824157?s=280&v=4";
+const name = "My App Name";
+const iconUrl = "https://web3auth.io/docs/contents/logo-ethereum.png";
 
 export const rainbowWeb3AuthConnector = ({ chains }) => {
   // Create Web3Auth Instance
-  const web3AuthInstance = new Web3AuthNoModal({
+  const web3AuthInstance = new Web3Auth({
     clientId: "YOUR_CLIENT_ID",
     chainConfig: {
       chainNamespace: CHAIN_NAMESPACES.EIP155,
-      chainId: "0x" + chains[0].id.toString(16),
+      chainId: "0x"+chains[0].id.toString(16),
       rpcTarget: chains[0].rpcUrls.default.http[0], // This is the public RPC we have added, please pass on your own endpoint while creating an app
       displayName: chains[0].name,
       tickerName: chains[0].nativeCurrency?.name,
       ticker: chains[0].nativeCurrency?.symbol,
       blockExplorer: chains[0]?.blockExplorers.default?.url,
     },
-    web3AuthNetwork: "cyan",
-    useCoreKitKey: true,
+    uiConfig: {
+      theme: "light",
+      loginMethodsOrder: ["twitter", "google"],
+      defaultLanguage: "en",
+      appLogo: "https://web3auth.io/images/w3a-L-Favicon-1.svg", // Your App Logo Here
+      modalZIndex: "2147483647",
+      appName: name,
+    },
   });
 
   // Add openlogin adapter for customisations
-  const openloginAdapter = new OpenloginAdapter({
+  const openloginAdapterInstance = new OpenloginAdapter({
     adapterSettings: {
-      uxMode: "popup",
-      loginConfig: {
-        jwt: {
-          name: "Web3Auth-Auth0-JWT",
-          verifier: "web3auth-auth0-demo",
-          typeOfLogin: "jwt",
-          clientId: "294QRkchfq2YaXUbPri7D6PH7xzHgQMT",
-        },
+      network: "cyan",
+      uxMode: "popup", 
+      whiteLabel: {
+        name: "Your app Name",
+        logoLight: "https://web3auth.io/images/w3a-L-Favicon-1.svg",
+        logoDark: "https://web3auth.io/images/w3a-D-Favicon-1.svg",
+        defaultLanguage: "en",
+        dark: true, // whether to enable dark mode. defaultValue: false
       },
     },
   });
-  web3AuthInstance.configureAdapter(openloginAdapter);
-
+  web3AuthInstance.configureAdapter(openloginAdapterInstance);
   return ({
     id: "web3auth",
     name,
@@ -47,16 +52,38 @@ export const rainbowWeb3AuthConnector = ({ chains }) => {
     createConnector: () => {
       const connector = new Web3AuthConnector({
         chains: chains,
-        options: {
+        options: { 
           web3AuthInstance,
-          loginParams: {
-            relogin: true,
-            loginProvider: "jwt",
-            extraLoginOptions: {
-              domain: "https://shahbaz-torus.us.auth0.com",
-              verifierIdField: "sub",
+          modalConfig: {
+            [WALLET_ADAPTERS.OPENLOGIN]: {
+              loginMethods: {
+                google: {
+                  name: "google login",
+                  logoDark: "url to your custom logo which will shown in dark mode",
+                },
+                facebook: {
+                  // it will hide the facebook option from the Web3Auth modal.
+                  name: "facebook login",
+                  showOnModal: false,
+                },
+              },
             },
-          },
+            [WALLET_ADAPTERS.WALLET_CONNECT_V1]: {
+              showOnModal: false,
+            },
+            [WALLET_ADAPTERS.WALLET_CONNECT_V2]: {
+              showOnModal: false,
+            },
+            [WALLET_ADAPTERS.TORUS_EVM]: {
+              showOnModal: false,
+            },
+            [WALLET_ADAPTERS.METAMASK]: {
+              showOnModal: false,
+            },
+            [WALLET_ADAPTERS.COINBASE]: {
+              showOnModal: false,
+            },
+          }
         },
       });
       return {
